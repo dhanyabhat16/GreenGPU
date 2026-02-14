@@ -1,10 +1,11 @@
 # PyTorch (GPU - CUDA 12.1). Install separately:
-#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # Core (GPU profiling)
 psutil>=5.9.0
 pandas>=2.0.0
 numpy>=1.24.0
+matplotlib>=3.7.0
 
 # IMDB Deduplicator (semantic similarity)
 sentence-transformers>=2.2.0

@@ -35,7 +35,7 @@ class GreenGPU:
         polling_interval: float = 0.01,
         auto_switch_to_cpu: bool = True,
         auto_switch_util_threshold: float = 20.0,
-            probe_inferences: int = 10,
+        probe_inferences: int = 10,
     ):
         self.gpu_profiler = GPUProfiler(polling_interval=polling_interval)
         self.model_loader = ModelLoader()
@@ -46,9 +46,15 @@ class GreenGPU:
         self.auto_switch_to_cpu = auto_switch_to_cpu
         self.auto_switch_util_threshold = auto_switch_util_threshold
         self.probe_inferences = probe_inferences
+        
+        # State tracking
         self.last_run_duration = 0.0
         self.last_device_used = self.model_loader.device
         self.switched_to_cpu = False
+        
+        # Baselines for calculating savings
+        self.baseline_gpu_power = 0.0
+        self.baseline_gpu_throughput = 0.0
 
     # ---------------------------------------------------
     # GPU VERIFICATION
@@ -105,6 +111,7 @@ class GreenGPU:
         input_size = (batch_size, 3, 224, 224)
         cpu_samples = []
         gpu_samples = []
+        gpu_power_samples = []
 
         psutil.cpu_percent(interval=None)
         start_time = time.perf_counter()
@@ -135,9 +142,11 @@ class GreenGPU:
             else:
                 gpu_util = 0.0
                 gpu_memory = 0.0
-                gpu_power = None
+                gpu_power = 0.0
 
             gpu_samples.append(gpu_util)
+            if gpu_power:
+                gpu_power_samples.append(gpu_power)
 
             power_eff = None
             if gpu_power:
@@ -169,25 +178,33 @@ class GreenGPU:
                 )
 
         duration = time.perf_counter() - start_time
+        avg_throughput = (num_inferences * batch_size) / duration
         avg_gpu_util = statistics.mean(gpu_samples) if gpu_samples else 0.0
         avg_cpu_util = statistics.mean(cpu_samples) if cpu_samples else 0.0
+        avg_gpu_power = statistics.mean(gpu_power_samples) if gpu_power_samples else 0.0
 
         return {
             "duration": duration,
             "avg_gpu_util": avg_gpu_util,
             "avg_cpu_util": avg_cpu_util,
+            "avg_gpu_power": avg_gpu_power,
+            "avg_throughput": avg_throughput
         }
 
     # ---------------------------------------------------
     # INFERENCE LOOP
     # ---------------------------------------------------
-    def run_inference(self, num_inferences: int = 20, batch_size: int = 32):
+    def run_inference(self, num_inferences: int = 2000, batch_size: int = 1):
         print("=" * 60)
         print(f"RUNNING {num_inferences} INFERENCES | Batch Size = {batch_size}")
         print("=" * 60 + "\n")
 
         self.metrics_collector.clear_history()
         self.switched_to_cpu = False
+        
+        # Reset baselines
+        self.baseline_gpu_power = 0.0
+        self.baseline_gpu_throughput = 0.0
 
         if (
             self.model_loader.device == "cuda"
@@ -195,26 +212,36 @@ class GreenGPU:
             and self.auto_switch_to_cpu
         ):
             probe_count = max(1, min(self.probe_inferences, num_inferences))
+            print(f"Running probe ({probe_count} inferences)...")
+            
             probe = self._run_inference_pass(
                 num_inferences=probe_count,
                 batch_size=batch_size,
                 record_metrics=False,
                 print_progress=False,
             )
+            
+            # Capture baseline GPU performance
+            self.baseline_gpu_power = probe["avg_gpu_power"]
+            self.baseline_gpu_throughput = probe["avg_throughput"]
+            
+            print(f"Probe Results -> GPU Util: {probe['avg_gpu_util']:.1f}% | Power: {self.baseline_gpu_power:.2f} W | Throughput: {self.baseline_gpu_throughput:.2f} inf/s")
+
             if probe["avg_gpu_util"] < self.auto_switch_util_threshold:
                 print(
-                    "Auto-switching to CPU due to low GPU utilization "
-                    f"({probe['avg_gpu_util']:.1f}%).\n"
+                    "\nAuto-switching to CPU due to low GPU utilization "
+                    f"({probe['avg_gpu_util']:.1f}% < {self.auto_switch_util_threshold}%).\n"
                 )
                 self.switched_to_cpu = True
                 self.model_loader.set_device("cpu")
-                self.gpu_profiler.stop_monitoring()
+                self.gpu_profiler.stop_monitoring() 
                 self.last_device_used = "cpu"
             else:
                 self.last_device_used = "gpu"
         else:
             self.last_device_used = self.model_loader.device
 
+        # Run the main workload
         run_info = self._run_inference_pass(
             num_inferences=num_inferences,
             batch_size=batch_size,
@@ -301,7 +328,7 @@ class GreenGPU:
         print(f"  Avg CPU util: {avg_cpu_util:.1f}%")
         print(f"  Test run duration: {self.last_run_duration:.2f}s")
 
-        # Gemini AI explanation (if GEMINI_API_KEY set)
+        # Gemini AI explanation
         try:
             try:
                 from .gemini_explainer import explain_cpu_shift_decision
@@ -320,17 +347,30 @@ class GreenGPU:
         except Exception:
             pass
 
-        avg_power = stats.get("gpu_power", {}).get("mean", 0.0)
+        # --- IMPACT CALCULATION ---
         
+        # 1. GPU Hours Saved
         if self.last_device_used == "cpu" and torch.cuda.is_available():
             gpu_hours_saved = self.last_run_duration / 3600.0
         else:
             gpu_hours_saved = 0.0
         
-        if avg_power > 0 and gpu_hours_saved > 0:
-            energy_saved_wh = (avg_power * gpu_hours_saved)
+        # 2. Energy Saved
+        if gpu_hours_saved > 0 and self.baseline_gpu_power > 0:
+            energy_saved_wh = (self.baseline_gpu_power * gpu_hours_saved)
         else:
             energy_saved_wh = 0.0
+
+        # 3. Compute Time Reduction
+        compute_time_reduction = 0.0
+        if self.last_device_used == "cpu" and self.baseline_gpu_throughput > 0:
+            # FIX: Use stats['total_inferences'] instead of trying to len() a float
+            total_inferences = stats.get("total_inferences", 0)
+            
+            projected_gpu_duration = total_inferences / self.baseline_gpu_throughput
+            
+            if projected_gpu_duration > 0:
+                compute_time_reduction = ((projected_gpu_duration - self.last_run_duration) / projected_gpu_duration) * 100
 
         energy_saved_kwh = energy_saved_wh / 1000.0
         carbon_saved_kg = energy_saved_kwh * 0.4
@@ -339,7 +379,7 @@ class GreenGPU:
         print("\n3. Energy & impact estimation")
         print("-" * 40)
         print(f"  GPU hours saved: {gpu_hours_saved:.6f}")
-        print(f"  Compute time reduction: 0.0%")
+        print(f"  Compute time reduction: {compute_time_reduction:.2f}% (vs GPU baseline)")
         print(f"  Energy saved: {energy_saved_wh:.4f} Wh")
         print(f"  Carbon saved: {carbon_saved_kg * 1000:.4f} g CO2")
         print(f"  Estimated cost saved: ${cost_saved_usd * 100:.4f} cents")
@@ -368,7 +408,7 @@ def main():
         if not greengpu.initialize():
             return
 
-        greengpu.run_inference(num_inferences=20, batch_size=32)
+        greengpu.run_inference(num_inferences=2000, batch_size=1)
         greengpu.print_report()
 
     finally:

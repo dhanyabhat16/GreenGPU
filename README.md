@@ -126,6 +126,15 @@ result = deduplicator.deduplicate()
 - **GEMINI_API_KEY** – Optional. Set for AI explanations (CPU shift, test case removal).
 - **GEMINI_MODEL** – Default: `gemini-1.5-flash`.
 
+## Auto-switch Heuristic
+
+The auto-switch decision uses short probe runs to measure GPU utilization. To avoid noisy early measurements we use a robust statistic (configurable as `median` or `p99`) instead of the mean. A hysteresis counter (`auto_switch_hysteresis`, default 3) requires the low/high condition to be sustained across multiple probes before switching devices. The default threshold of 20% was chosen because:
+
+- Below ~20% GPU utilization the device is typically underutilized for inference workloads and energy efficiency favors CPU or larger batch sizes.
+- Using a robust statistic (median or P99) avoids flipping due to outlier samples or transient spikes.
+
+You can tune `probe_stat` (`median` or `p99`) and `auto_switch_hysteresis` in `GreenGPU(...)` to match your environment and stability requirements.
+
 ```bash
 export GEMINI_API_KEY=your_key
 ```

@@ -72,7 +72,7 @@ class MetricsCollector:
         memory_used = [m.gpu_memory_used for m in self.metrics_history]
         utilizations = [m.gpu_utilization for m in self.metrics_history]
         cpu_utils = [m.cpu_utilization for m in self.metrics_history if m.cpu_utilization is not None]
-        powers = [m.gpu_power for m in self.metrics_history if m.gpu_power]
+        powers = [m.gpu_power for m in self.metrics_history if m.gpu_power is not None]
 
         stats = {
             "total_inferences": len(self.metrics_history),
@@ -131,7 +131,7 @@ class EfficiencyAnalyzer:
 
     @staticmethod
     def calculate_power_efficiency(throughput: float, power_watts: float) -> float:
-        if not power_watts or power_watts == 0:
+        if power_watts is None or power_watts == 0:
             return 0
         return throughput / power_watts
 
