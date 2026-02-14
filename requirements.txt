@@ -1,2 +1,19 @@
-pip install torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121 --index-url https://download.pytorch.org/whl/cu121
-pip install psutil==5.9.8 pandas==2.2.2 numpy==1.26.4
+# PyTorch (GPU - CUDA 12.1). Install separately:
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Core (GPU profiling)
+psutil>=5.9.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# IMDB Deduplicator (semantic similarity)
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.0
+
+# Evaluation pipeline
+transformers>=4.30.0
+scikit-learn>=1.2.0
+tqdm>=4.65.0
+
+# AI Explanations (optional - set GEMINI_API_KEY)
+google-generativeai>=0.3.0

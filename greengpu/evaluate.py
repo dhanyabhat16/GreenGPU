@@ -10,8 +10,9 @@ from tqdm import tqdm
 # CONFIGURATION
 # ==============================
 
-ORIGINAL_PATH = "dataset/test"
-DEDUP_PATH = "dataset/test_deduplicated"
+_BASE = os.path.dirname(os.path.abspath(__file__))
+ORIGINAL_PATH = os.path.join(_BASE, "dataset", "test")
+DEDUP_PATH = os.path.join(_BASE, "dataset", "test_deduplicated")
 
 MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 MAX_LENGTH = 512
@@ -103,7 +104,11 @@ def evaluate_dataset(texts: List[str], labels: List[int], classifier):
 # MAIN
 # ==============================
 
-def main():
+def main(original_path=None, dedup_path=None, device=-1):
+    """Run evaluation comparing original vs deduplicated dataset."""
+    orig_path = original_path or ORIGINAL_PATH
+    dedup_path = dedup_path or DEDUP_PATH
+
     print("=" * 70)
     print("GreenGPU Evaluation: Original vs Deduplicated")
     print("=" * 70)
@@ -112,12 +117,12 @@ def main():
     classifier = pipeline(
         "sentiment-analysis",
         model=MODEL_NAME,
-        device=-1  # change to 0 if GPU available
+        device=device  # -1 for CPU, 0 for GPU
     )
 
     # Load datasets
-    orig_texts, orig_labels = load_dataset(ORIGINAL_PATH)
-    dedup_texts, dedup_labels = load_dataset(DEDUP_PATH)
+    orig_texts, orig_labels = load_dataset(orig_path)
+    dedup_texts, dedup_labels = load_dataset(dedup_path)
 
     print(f"\nOriginal samples: {len(orig_texts)}")
     print(f"Deduplicated samples: {len(dedup_texts)}")

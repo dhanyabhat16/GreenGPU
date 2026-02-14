@@ -1,12 +1,11 @@
-# Python
+# Virtual environment
+venv/
+.venv/
+.env/
+env/
+
+# Python cache
 __pycache__/
 *.py[cod]
-
-# Virtual environments
-venv/
-.env/
-
-# Project-specific
-Greengpu/venv/
-greengpu/venv/
-greengpu/__pycache__/
+*.pyd
+.Python

@@ -8,7 +8,12 @@ Generates natural language explanations for:
 
 from typing import Any, Optional
 
-from config import GEMINI_API_KEY, GEMINI_MODEL
+try:
+    from config import GEMINI_API_KEY, GEMINI_MODEL  # noqa: F401
+except ImportError:
+    import os
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+    GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
 
 
 def _get_client():

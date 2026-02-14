@@ -8,14 +8,24 @@ import time
 import psutil
 import statistics
 from typing import Dict
-from profiler import GPUProfiler
-from model_loader import ModelLoader
-from metrics import (
-    InferenceTimer,
-    MetricsCollector,
-    InferenceMetrics,
-    EfficiencyAnalyzer,
-)
+try:
+    from .profiler import GPUProfiler
+    from .model_loader import ModelLoader
+    from .metrics import (
+        InferenceTimer,
+        MetricsCollector,
+        InferenceMetrics,
+        EfficiencyAnalyzer,
+    )
+except ImportError:
+    from profiler import GPUProfiler
+    from model_loader import ModelLoader
+    from metrics import (
+        InferenceTimer,
+        MetricsCollector,
+        InferenceMetrics,
+        EfficiencyAnalyzer,
+    )
 
 
 class GreenGPU:
@@ -171,7 +181,7 @@ class GreenGPU:
     # ---------------------------------------------------
     # INFERENCE LOOP
     # ---------------------------------------------------
-    def run_inference(self, num_inferences: int = 1000, batch_size: int = 16):
+    def run_inference(self, num_inferences: int = 20, batch_size: int = 32):
         print("=" * 60)
         print(f"RUNNING {num_inferences} INFERENCES | Batch Size = {batch_size}")
         print("=" * 60 + "\n")
@@ -291,6 +301,25 @@ class GreenGPU:
         print(f"  Avg CPU util: {avg_cpu_util:.1f}%")
         print(f"  Test run duration: {self.last_run_duration:.2f}s")
 
+        # Gemini AI explanation (if GEMINI_API_KEY set)
+        try:
+            try:
+                from .gemini_explainer import explain_cpu_shift_decision
+            except ImportError:
+                from gemini_explainer import explain_cpu_shift_decision
+            summary = {
+                "reasons": [reason],
+                "recommend_cpu": recommend_cpu,
+                "device_used": self.last_device_used,
+                "avg_gpu_util": avg_gpu_util,
+                "avg_cpu_util": avg_cpu_util,
+                "auto_switch_threshold": self.auto_switch_util_threshold,
+            }
+            ai_explanation = explain_cpu_shift_decision(summary)
+            print(f"\n  AI Explanation: {ai_explanation}")
+        except Exception:
+            pass
+
         avg_power = stats.get("gpu_power", {}).get("mean", 0.0)
         
         if self.last_device_used == "cpu" and torch.cuda.is_available():
@@ -302,7 +331,8 @@ class GreenGPU:
             energy_saved_wh = (avg_power * gpu_hours_saved)
         else:
             energy_saved_wh = 0.0
-        
+
+        energy_saved_kwh = energy_saved_wh / 1000.0
         carbon_saved_kg = energy_saved_kwh * 0.4
         cost_saved_usd = energy_saved_kwh * 0.12
 
@@ -310,7 +340,7 @@ class GreenGPU:
         print("-" * 40)
         print(f"  GPU hours saved: {gpu_hours_saved:.6f}")
         print(f"  Compute time reduction: 0.0%")
-        print(f"  Energy saved: {energy_saved_kwh * 1000:.4f} Wh")
+        print(f"  Energy saved: {energy_saved_wh:.4f} Wh")
         print(f"  Carbon saved: {carbon_saved_kg * 1000:.4f} g CO2")
         print(f"  Estimated cost saved: ${cost_saved_usd * 100:.4f} cents")
 
@@ -338,7 +368,7 @@ def main():
         if not greengpu.initialize():
             return
 
-        greengpu.run_inference(num_inferences=1000, batch_size=16)
+        greengpu.run_inference(num_inferences=20, batch_size=32)
         greengpu.print_report()
 
     finally:

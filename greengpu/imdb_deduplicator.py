@@ -383,7 +383,27 @@ class IMDBTextDeduplicator:
         print(f"Removed: {removal_count} ({removal_percentage*100:.2f}%)")
         print(f"Max class shift: {max_class_shift*100:.2f}%")
         print(f"Threshold used: {self.threshold}")
-        
+
+        # Gemini AI explanation (if GEMINI_API_KEY set)
+        ai_explanation = ""
+        try:
+            try:
+                from .gemini_explainer import explain_removed_test_cases
+            except ImportError:
+                from gemini_explainer import explain_removed_test_cases
+            summary = {
+                "removed_count": removal_count,
+                "original_size": original_size,
+                "reduced_size": len(representatives),
+                "similarity_threshold": self.threshold,
+                "reduction_percentage": removal_percentage * 100,
+                "max_class_shift_percent": max_class_shift * 100,
+            }
+            ai_explanation = explain_removed_test_cases(summary)
+            print(f"\nAI Explanation: {ai_explanation}")
+        except Exception:
+            pass
+
         # Generate description
         description = (
             f"Removed {removal_percentage*100:.1f}% semantically redundant reviews using "
@@ -392,7 +412,7 @@ class IMDBTextDeduplicator:
             f"This reduces evaluation cost and energy usage while maintaining coverage."
         )
         
-        return {
+        result = {
             "original_size": original_size,
             "reduced_size": len(representatives),
             "reduction_percentage": removal_percentage,
@@ -400,6 +420,9 @@ class IMDBTextDeduplicator:
             "threshold_used": self.threshold,
             "description": description
         }
+        if ai_explanation:
+            result["ai_explanation"] = ai_explanation
+        return result
     def _save_reduced_dataset(self, selected_indices: Set[int]) -> None:
         """
         Save deduplicated dataset to new directory: dataset/test_deduplicated
