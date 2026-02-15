@@ -354,16 +354,16 @@ class GreenGPU:
                 compute_time_reduction = ((projected_gpu_duration - self.last_run_duration) / projected_gpu_duration) * 100
 
         energy_saved_kwh = energy_saved_wh / 1000.0
-        carbon_saved_kg = energy_saved_kwh * 0.4
-        cost_saved_usd = energy_saved_kwh * 0.12
+        carbon_saved_g = energy_saved_kwh * 0.4 * 1000
+        cost_saved_cents = energy_saved_kwh * 0.12 * 100
 
         print("\n3. Energy & impact estimation")
         print("-" * 40)
         print(f"  GPU hours saved: {gpu_hours_saved:.6f}")
         print(f"  Compute time reduction: {compute_time_reduction:.2f}% (vs GPU baseline)")
         print(f"  Energy saved: {energy_saved_wh:.4f} Wh")
-        print(f"  Carbon saved: {carbon_saved_kg * 1000:.4f} g CO2")
-        print(f"  Estimated cost saved: ${cost_saved_usd * 100:.4f} dollars")
+        print(f"  Carbon saved: {carbon_saved_g:.4f} g CO2")
+        print(f"  Estimated cost saved: {cost_saved_cents:.4f} cents")
 
         print("\n" + "=" * 60)
 
