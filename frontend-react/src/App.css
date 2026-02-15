@@ -1,0 +1,92 @@
+.app { min-height: 100vh; }
+.main { padding: 1.5rem 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.header-left { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text);
+}
+.logo-icon { color: var(--green); font-size: 1rem; }
+.tagline { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.nav { display: flex; gap: 0.5rem; }
+.nav-link {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.nav-link:hover { color: var(--text); }
+.nav-link.active {
+  background: rgba(0, 255, 136, 0.15);
+  color: var(--green);
+}
+
+.header-right { margin-left: auto; }
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+}
+.status-pill.online {
+  color: var(--green);
+  border-color: rgba(0, 255, 136, 0.3);
+  background: rgba(0, 255, 136, 0.08);
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+.status-pill.online .status-dot { background: var(--green); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+.toast {
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+.toast.error {
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--red);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}

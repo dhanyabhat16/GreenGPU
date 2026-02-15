@@ -328,25 +328,6 @@ class GreenGPU:
         print(f"  Avg CPU util: {avg_cpu_util:.1f}%")
         print(f"  Test run duration: {self.last_run_duration:.2f}s")
 
-        # Gemini AI explanation
-        try:
-            try:
-                from .gemini_explainer import explain_cpu_shift_decision
-            except ImportError:
-                from gemini_explainer import explain_cpu_shift_decision
-            summary = {
-                "reasons": [reason],
-                "recommend_cpu": recommend_cpu,
-                "device_used": self.last_device_used,
-                "avg_gpu_util": avg_gpu_util,
-                "avg_cpu_util": avg_cpu_util,
-                "auto_switch_threshold": self.auto_switch_util_threshold,
-            }
-            ai_explanation = explain_cpu_shift_decision(summary)
-            print(f"\n  AI Explanation: {ai_explanation}")
-        except Exception:
-            pass
-
         # --- IMPACT CALCULATION ---
         
         # 1. GPU Hours Saved
@@ -382,7 +363,7 @@ class GreenGPU:
         print(f"  Compute time reduction: {compute_time_reduction:.2f}% (vs GPU baseline)")
         print(f"  Energy saved: {energy_saved_wh:.4f} Wh")
         print(f"  Carbon saved: {carbon_saved_kg * 1000:.4f} g CO2")
-        print(f"  Estimated cost saved: ${cost_saved_usd * 100:.4f} cents")
+        print(f"  Estimated cost saved: ${cost_saved_usd * 100:.4f} dollars")
 
         print("\n" + "=" * 60)
 

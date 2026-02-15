@@ -132,3 +132,35 @@ Do not use bullet points. Write in prose."""
             f"Removed {summary.get('removed_count', 0)} cases (similarity threshold {summary.get('similarity_threshold')})."
         )
     return str(summary)
+
+
+def explain_impact_summary(data: dict) -> str:
+    """
+    Use Gemini to generate a sustainability impact summary from profile + dedup + eval data.
+    """
+    client = _get_client()
+    if not client:
+        return (
+            "AI summary unavailable (GEMINI_API_KEY not set). "
+            "Run profiling and deduplication to see your impact metrics above."
+        )
+
+    prompt = f"""You are a green computing assistant. In one short paragraph (3-5 sentences), summarize the sustainability impact of this ML workload optimization. Be specific about energy saved, CO2 avoided, and cost. Mention both compute (GPU/CPU) and test case deduplication impacts if relevant. Use the data provided. Be concise and impactful.
+
+Data:
+{data}
+
+Do not use bullet points. Write in prose."""
+
+    try:
+        response = client.generate_content(prompt)
+        text = _extract_text(response)
+        if text:
+            return text
+        if response and getattr(response, "candidates", None):
+            c = response.candidates[0]
+            if getattr(c, "finish_reason", None) and "blocked" in str(c.finish_reason).lower():
+                return "AI summary was blocked by content filters. Run profiling and deduplication to see your impact metrics."
+    except Exception as e:
+        return f"AI summary could not be generated: {e}. Run profiling and deduplication to see your impact metrics."
+    return str(data)

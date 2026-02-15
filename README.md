@@ -12,12 +12,35 @@ A single project for GPU monitoring, inference profiling, semantic dataset dedup
 | **Evaluation Pipeline** | Compare original vs deduplicated datasets (accuracy, F1, inference time) |
 | **AI Explanations** | Optional Gemini-powered explanations (set `GEMINI_API_KEY`) |
 
+## Web UI (React Dashboard)
+
+Dynamic React dashboard with metric cards, compute decision, test case deduplication, and sustainability impact.
+
+**Option A — Development (hot reload):**
+```bash
+# Terminal 1: Backend
+python api.py
+
+# Terminal 2: React dev server
+cd frontend-react && npm install && npm run dev
+```
+Open [http://localhost:5173](http://localhost:5173) (proxies API to 8000).
+
+**Option B — Production build:**
+```bash
+cd frontend-react && npm install && npm run build
+python api.py
+```
+Open [http://localhost:8000](http://localhost:8000).
+
 ## Project Structure
 
 ```
 Defaulters/
 ├── main.py              # Unified CLI entry point
+├── api.py               # FastAPI server + web UI
 ├── config.py            # Config (GEMINI_API_KEY, etc.)
+├── frontend/            # Web UI (HTML, CSS, JS)
 ├── requirements.txt
 ├── verify_gpu.py        # Quick GPU check
 └── greengpu/

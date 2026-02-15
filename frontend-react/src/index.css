@@ -1,0 +1,20 @@
+:root {
+  --bg: #0a0f0d;
+  --bg-card: #121a16;
+  --border: rgba(0, 255, 136, 0.12);
+  --green: #00ff88;
+  --green-dim: #00cc6a;
+  --cyan: #00d4ff;
+  --amber: #ffb347;
+  --red: #ff6b6b;
+  --text: #e8eee9;
+  --text-muted: #8a9a90;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
