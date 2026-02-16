@@ -1,4 +1,4 @@
-# GreenGPU – GPU Profiler & Sustainability Toolkit
+# GreenGPU – GPU Profiler & Sustainability
 
 A single project for GPU monitoring, inference profiling, semantic dataset deduplication, and evaluation—built around sustainability and efficiency.
 
